@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "wrangler types && tsc --noEmit -p tsconfig.src.json && tsc --noEmit -p tsconfig.test.json",
+    "build:gcp": "esbuild src/gcp/server.ts --bundle --platform=node --format=esm --target=node26 --outfile=dist/gcp/server.mjs",
     "check": "pnpm routes:check && pnpm sql:check && pnpm format:check && pnpm lint && pnpm test && pnpm test:e2e && pnpm build && go test ./... && go vet ./...",
     "deploy": "wrangler deploy && wrangler deploy --config wrangler.public-proxy.jsonc",
     "docs:site": "node scripts/build-docs-site.mjs",
@@ -18,6 +19,7 @@
     "sql:check": "pnpm sql:compile && pnpm sql:generate && git diff --exit-code -- src/generated/sql.ts",
     "sql:compile": "go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1 compile",
     "sql:generate": "node scripts/generate-sql.mjs && oxfmt src/generated/sql.ts --write",
+    "start:gcp": "node dist/gcp/server.mjs",
     "test": "vitest run",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:e2e:cli-worker": "sh test/cli-worker-e2e.sh",
@@ -26,6 +28,8 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.20.1",
     "@types/node": "^26.1.2",
+    "esbuild": "0.28.1",
+    "esbuild": "0.28.1",
     "oxfmt": "^0.61.0",
     "oxlint": "^1.76.0",
     "typescript": "^7.0.2",
