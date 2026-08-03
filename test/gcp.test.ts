@@ -1,3 +1,4 @@
+import type { IncomingMessage } from "node:http";
 import { Readable } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
 import { GcpExecutionContext } from "../src/gcp/context";
@@ -58,7 +59,7 @@ describe("GCP Cloud Run support", () => {
       "content-type": "text/plain",
     };
 
-    const request = await requestFromIncomingMessage(incoming);
+    const request = await requestFromIncomingMessage(incoming as unknown as IncomingMessage);
 
     expect(request.method).toBe("POST");
     expect(request.url).toBe("https://octopool.example/relay?pool=maintainers");

@@ -134,6 +134,54 @@ octopool stats
 - Custom domain route — `octopool.dev` for OpenClaw; whatever you set in `routes[]` for
   your own deployment.
 
+## Cloud Run prototype
+
+Octopool also has a small Google Cloud Run entrypoint in `src/gcp/server.ts`. It wraps the
+same Worker-style `fetch(request, env, ctx)` app with a Node HTTP server that:
+
+- listens on `process.env.PORT` as required by Cloud Run,
+- converts Node requests into Web `Request` objects,
+- writes Web `Response` objects back to Node responses,
+- provides a `ctx.waitUntil()` shim for background tasks,
+- exposes `POST /internal/maintenance` for Cloud Scheduler, protected by
+  `OCTOPOOL_MAINTENANCE_TOKEN`,
+- uses an in-memory `POOL_COORDINATOR` namespace for single-instance prototypes.
+
+Build and run the container entrypoint locally:
+
+```sh
+pnpm install
+pnpm build:gcp
+PORT=8080 node dist/gcp/server.mjs
+```
+
+Or build the included container:
+
+```sh
+docker build -t octopool-gcp .
+docker run --rm -p 8080:8080 -e PORT=8080 octopool-gcp
+```
+
+The GCP wrapper intentionally keeps Cloudflare bindings explicit. Production Cloud Run still
+needs GCP-backed bindings before it can serve real traffic:
+
+- `DB` must be supplied by a D1-compatible adapter, normally backed by Cloud SQL for
+  PostgreSQL. SQLite is only suitable for local or single-instance proof-of-concept runs.
+- `ACTIONS_LOGS` needs a Cloud Storage adapter if action logs are enabled.
+- pooled identity `secret_ref` values should be provided through Secret Manager as Cloud Run
+  environment/secret variables.
+- the default in-memory coordinator is only safe when Cloud Run `max-instances=1`; use a
+  Redis-backed coordinator, such as Memorystore for Redis, before allowing multiple instances.
+
+Trigger maintenance with Cloud Scheduler by sending a `POST` request to the internal endpoint
+with an `Authorization` header whose value is the bearer token from
+`OCTOPOOL_MAINTENANCE_TOKEN`:
+
+```sh
+curl -X POST -H @/path/to/maintenance-authorization-header \
+  https://octopool.example/internal/maintenance
+```
+
 ## Configuration
 
 Plain vars (in `wrangler.jsonc`):

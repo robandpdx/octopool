@@ -1,4 +1,9 @@
-import type { CoordinatorSnapshot, RecordResult, SelectionRequest, SelectionResult } from "../types";
+import type {
+  CoordinatorSnapshot,
+  RecordResult,
+  SelectionRequest,
+  SelectionResult,
+} from "../types";
 
 type CacheFill = {
   ownerToken: string;

@@ -24,15 +24,22 @@ export async function handleGcpRequest(
   return await app.fetch(request, env, ctx);
 }
 
-export function startCloudRunServer(env = createGcpEnvFromProcess()): ReturnType<typeof createServer> {
+export function startCloudRunServer(
+  env = createGcpEnvFromProcess(),
+): ReturnType<typeof createServer> {
   const port = Number(process.env.PORT ?? DEFAULT_PORT);
   const server = createServer(async (incoming, outgoing) => {
     const ctx = new GcpExecutionContext();
     try {
       const request = await requestFromIncomingMessage(incoming);
-      const response = await handleGcpRequest(request, env, ctx, {
-        maintenanceToken: process.env.OCTOPOOL_MAINTENANCE_TOKEN,
-      });
+      const maintenanceToken = process.env.OCTOPOOL_MAINTENANCE_TOKEN;
+      const options =
+        maintenanceToken === undefined
+          ? {}
+          : {
+              maintenanceToken,
+            };
+      const response = await handleGcpRequest(request, env, ctx, options);
       await writeWebResponse(outgoing, response);
     } catch (error) {
       console.error("gcp request failed", error);
@@ -53,7 +60,7 @@ export async function requestFromIncomingMessage(incoming: IncomingMessage): Pro
   const proto = headers.get("x-forwarded-proto") ?? "http";
   const url = new URL(incoming.url ?? "/", `${proto}://${host}`);
   const init: RequestInit = {
-    method: incoming.method,
+    method: incoming.method ?? "GET",
     headers,
   };
   if (incoming.method !== "GET" && incoming.method !== "HEAD") {
